@@ -1,0 +1,52 @@
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, accuracy_score, classification_report, roc_curve, PrecisionRecallDisplay
+import matplotlib.pyplot as plt
+
+# Load dataset
+df = pd.read_csv("Social_Network_Ads.csv")
+
+# Feature and target selection
+X = df.iloc[:, 3].values.reshape(-1, 1)  # Estimated salary
+y = df.iloc[:, -1].values                # Purchased
+
+# Train-test split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=0)
+
+# Scaling features
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+# Logistic Regression model
+model = LogisticRegression(random_state=0)
+model.fit(X_train, y_train)
+
+# Predictions
+y_pred = model.predict(X_test)
+
+# Evaluation metrics
+print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred))
+print("Accuracy Score:", accuracy_score(y_test, y_pred))
+print("Classification Report:\n", classification_report(y_test, y_pred))
+
+cm = confusion_matrix(y_test, y_pred)
+disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+disp.plot(cmap ='Blues')
+plt.title('Confusion Matrix')
+plt.show()
+
+
+
+# ROC Curve
+fpr, tpr, _ = roc_curve(y_test, model.predict_proba(X_test)[:, 1], pos_label=1)
+plt.plot(fpr, tpr, label='Logistic Regression', color='orange')
+plt.plot([0, 1], [0, 1], linestyle='--', color='blue')
+plt.title('ROC Curve')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.legend(loc='best')
+plt.show()
