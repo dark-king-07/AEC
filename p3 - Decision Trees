@@ -1,0 +1,50 @@
+import numpy as np
+from matplotlib import pyplot as plt
+from matplotlib.colors import ListedColormap
+from sklearn import datasets
+from sklearn.tree import DecisionTreeClassifier, export_text, plot_tree
+
+# Load the iris dataset
+iris = datasets.load_iris()
+X = iris.data[:, 2:]  # Use petal length and width
+y = iris.target
+
+# Train a decision tree model
+clf = DecisionTreeClassifier(max_depth=2, random_state=1234)
+clf.fit(X, y)
+
+# Save the tree structure to a log file
+with open("decision_tree.log", "w") as f_out:
+    f_out.write(export_text(clf, feature_names=iris.feature_names[2:]))
+
+# Visualize the decision tree
+plt.figure(figsize=(10, 8))
+plot_tree(clf, feature_names=iris.feature_names[2:], class_names=iris.target_names, filled=True)
+plt.show()
+
+# Helper function to plot decision boundaries
+def plot_decision_boundary(clf, X, y, axes=[0, 7.5, 0, 3]):
+    x1s = np.linspace(axes[0], axes[1], 100)
+    x2s = np.linspace(axes[2], axes[3], 100)
+    x1, x2 = np.meshgrid(x1s, x2s)
+    X_new = np.c_[x1.ravel(), x2.ravel()]
+    y_pred = clf.predict(X_new).reshape(x1.shape)
+    cmap = ListedColormap(['#fafab0', '#9898ff', '#a0faa0'])
+    plt.contourf(x1, x2, y_pred, alpha=0.3, cmap=cmap)
+    plt.scatter(X[:, 0], X[:, 1], c=y, edgecolor="k", cmap=cmap)
+    plt.xlabel("Petal length")
+    plt.ylabel("Petal width")
+
+# Plot decision boundaries for models with and without regularization
+plt.figure(figsize=(8, 4))
+plot_decision_boundary(clf, X, y)
+plt.title("Decision Tree with Depth=2")
+plt.show()
+
+clf2 = DecisionTreeClassifier(max_depth=2, min_samples_leaf=2, random_state=2)
+clf2.fit(X, y)
+
+plt.figure(figsize=(8, 4))
+plot_decision_boundary(clf2, X, y)
+plt.title("Regularized Decision Tree")
+plt.show()
