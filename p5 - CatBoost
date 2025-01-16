@@ -1,0 +1,46 @@
+experiment 5 catboost
+
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import accuracy_score, classification_report
+from catboost import CatBoostClassifier
+
+# Load dataset
+data = pd.read_csv("LoanStats3a.csv")
+
+# Drop columns with more than 40% missing values
+data = data[data.columns[((data.isnull().sum()) / len(data)) < 0.4]]
+
+# Fill missing values
+data.fillna(data.median(numeric_only=True), inplace=True)
+data.fillna('Unknown', inplace=True)
+
+# Feature engineering
+data['term'] = data['term'].str.extract('(\d+)').astype(float)
+data['int_rate'] = data['int_rate'].str.rstrip('%').astype(float)
+
+# Encode categorical variables
+categorical_columns = data.select_dtypes(include=['object']).columns
+le = LabelEncoder()
+for col in categorical_columns:
+    data[col] = le.fit_transform(data[col])
+
+# Define target and features
+target = 'loan_status'
+X = data.drop(columns=[target])
+y = data[target]
+
+# Split data into train and test sets
+x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=y, random_state=42)
+
+# Train CatBoost model
+catboost_clf = CatBoostClassifier(iterations=100, learning_rate=0.1, verbose=False)
+catboost_clf.fit(x_train, y_train)
+
+# Make predictions
+predictions = catboost_clf.predict(x_test)
+
+# Evaluate the model
+print("Accuracy Score:", accuracy_score(y_test, predictions))
+print("Classification Report:\n", classification_report(y_test, predictions))
