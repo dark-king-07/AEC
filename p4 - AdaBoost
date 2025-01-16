@@ -1,0 +1,58 @@
+ import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.ensemble import AdaBoostClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn import metrics
+
+# Load the dataset
+df = pd.read_csv("C:/Users/kavan/Downloads/archive (7)/Indian Liver Patient Dataset (ILPD).csv")
+df.dropna(inplace=True)  # Drop missing values
+
+# Data preprocessing
+df['is_patient'] = df['is_patient'].replace({1: 0, 2: 1})
+df['gender'] = LabelEncoder().fit_transform(df['gender'])
+
+X = df[['gender', 'tot_bilirubin', 'tot_proteins', 'ag_ratio', 'sgot', 'alkphos']]
+y = df['is_patient']
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+# Train AdaBoost Classifier
+adb_clf = AdaBoostClassifier(
+    base_estimator=DecisionTreeClassifier(max_depth=2),
+    n_estimators=100,
+    learning_rate=0.5,
+    random_state=42
+)
+adb_clf.fit(X_train, y_train)
+
+# Evaluate model
+y_pred = adb_clf.predict(X_test)
+accuracy = metrics.accuracy_score(y_test, y_pred)
+print(f"Accuracy: {accuracy:.3f}")
+
+# Confusion matrix heatmap
+matrix = metrics.confusion_matrix(y_test, y_pred)
+sns.heatmap(matrix, annot=True, fmt='d', cmap='Blues', cbar=False)
+plt.xlabel('Predicted')
+plt.ylabel('Actual')
+plt.title('Confusion Matrix')
+plt.show()
+
+# ROC Curve
+fpr, tpr, _ = metrics.roc_curve(y_test, adb_clf.predict_proba(X_test)[:, 1])
+roc_auc = metrics.roc_auc_score(y_test, y_pred)
+plt.plot(fpr, tpr, label=f'ROC Curve (AUC = {roc_auc:.2f})')
+plt.plot([0, 1], [0, 1], 'r--')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.legend(loc='lower right')
+plt.title('ROC Curve')
+plt.show()
